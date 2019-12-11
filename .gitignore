@@ -1,0 +1,5 @@
+.idea/
+*.pyc
+/.git/
+.DS_Store
+/venv/
