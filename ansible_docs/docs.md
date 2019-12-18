@@ -167,3 +167,19 @@ tasks
 handlers
 
 ```
+## roles
+site.yml     执行入口文件
+roles        目录下的目录以角色名称命名
+  common
+    files    放用到的文件,如证书文件等
+    handlers
+      main.yml
+    tasks
+      main.yml
+    templates 放模板文件  
+    vars
+    defaults
+    meta
+  mongod
+group_vars   目录下文件以group名称命名
+hosts        主机清单文件
