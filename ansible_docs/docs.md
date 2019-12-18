@@ -1,5 +1,6 @@
 # ansible docs
-
+### http://www.zsythink.net/
+### https://github.com/ansible/ansible-examples/
 ## install
 ```
 pip3 install ansible
@@ -21,8 +22,12 @@ all:
     www[01:50].example.com:
     db-[a:f].example.com:
     jumper:   # 别名
-      ansible_port: 5555   # 变量
-      ansible_host: 192.0.2.50
+      ansible_connect: smart
+      ansible_host: ip
+      ansible_port: 22
+      ansible_user: silence
+      ansible_become_user: root
+      ansible_python_interpreter: "/bin/env python2.6"
   children:
     webservers:
       hosts:
@@ -162,3 +167,19 @@ tasks
 handlers
 
 ```
+## roles
+site.yml     执行入口文件
+roles        目录下的目录以角色名称命名
+  common
+    files    放用到的文件,如证书文件等
+    handlers
+      main.yml
+    tasks
+      main.yml
+    templates 放模板文件  
+    vars
+    defaults
+    meta
+  mongod
+group_vars   目录下文件以group名称命名
+hosts        主机清单文件
