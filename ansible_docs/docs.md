@@ -1,5 +1,6 @@
 # ansible docs
 ### http://www.zsythink.net/
+### https://github.com/ansible/ansible-examples/
 ## install
 ```
 pip3 install ansible
