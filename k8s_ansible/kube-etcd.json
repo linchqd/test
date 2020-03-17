@@ -1,0 +1,72 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "name":"etcd-{{index}}",
+    "namespace": "kube-system",
+    "annotations": {
+      "scheduler.alpha.kubernetes.io/critical-pod": "",
+      "seccomp.security.alpha.kubernetes.io/pod": "docker/default"
+    }
+  },
+  "spec":{
+  "hostNetwork": true,
+  "containers":[
+    {
+      "name": "etcd-{{index}}",
+      "image": "{{etcd_images}}",
+      "command": [
+        "/bin/sh",
+        "-c",
+        "if [ -e /usr/local/bin/migrate-if-needed.sh ]; then /usr/local/bin/migrate-if-needed.sh 1>>/var/log/kube-etcd.log 2>&1; fi; exec /usr/local/bin/etcd --data-dir=/var/lib/etcd/data --name=etcd-{{ansible_host}} --cert-file=/etc/kubernetes/certs/etcd.pem --key-file=/etc/kubernetes/certs/etcd-key.pem --trusted-ca-file=/etc/kubernetes/ca/ca.pem --peer-cert-file=/etc/kubernetes/certs/etcd.pem --peer-key-file=/etc/kubernetes/certs/etcd-key.pem --peer-trusted-ca-file=/etc/kubernetes/ca/ca.pem --peer-client-cert-auth --client-cert-auth --listen-peer-urls=https://{{ansible_host}}:2380 --initial-advertise-peer-urls=https://{{ansible_host}}:2380 --listen-client-urls=https://{{ansible_host}}:2379,https://127.0.0.1:2379 --advertise-client-urls=https://{{ansible_host}}:2379 --initial-cluster-token=kube-etcd-cluster --initial-cluster={{etcd_cluster}} --initial-cluster-state=new --auto-compaction-mode=periodic --auto-compaction-retention=1 --max-request-bytes=33554432 --quota-backend-bytes=6442450944 --heartbeat-interval=250 --election-timeout=2000 --snapshot-count=10000 --max-snapshots=5 --max-wals=5 1>>/var/log/kube-etcd.log 2>&1"
+      ],
+      "volumeMounts": [
+        { "name": "etcd-cert",
+          "mountPath": "/etc/kubernetes/certs/etcd.pem",
+          "readOnly": true
+        },
+        { "name": "etcd-cert-key",
+          "mountPath": "/etc/kubernetes/certs/etcd-key.pem",
+          "readOnly": true
+        },
+        { "name": "ca-certs",
+          "mountPath": "/etc/kubernetes/ca/ca.pem",
+          "readOnly": true
+        },
+        { "name": "etcd-log",
+          "mountPath": "/var/log/kube-etcd.log",
+          "readOnly": false
+        },
+        { "name": "etcd-data",
+          "mountPath": "/var/lib/etcd/data",
+          "readOnly": false
+        }
+      ]
+    }
+  ],
+"volumes":[
+  { "name": "etcd-cert",
+    "hostPath": {
+        "path": "/srv/ssl/etcd.pem"}
+  },
+  { "name": "etcd-cert-key",
+    "hostPath": {
+        "path": "/srv/ssl/etcd-key.pem"}
+  },
+  { "name": "ca-certs",
+    "hostPath": {
+        "path": "/srv/ssl/ca.pem"}
+  },
+  { "name": "etcd-log",
+    "hostPath": {
+        "path": "/root/etcd.log",
+        "type": "FileOrCreate"}
+  },
+  { "name": "etcd-data",
+    "hostPath": {
+        "path": "/root/etcd",
+        "type": "DirectoryOrCreate"}
+  }
+]
+}
+}
