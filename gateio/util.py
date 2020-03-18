@@ -19,13 +19,11 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 
 # logging setting
-class LogFilter(logging.Filter):
-    def filter(self, record):
-        if record.levelno > 30:
-            return False
-        return True
-
-
+# class LogFilter(logging.Filter):
+#     def filter(self, record):
+#         if record.levelno > 30:
+#             return False
+#         return True
 log_dir = os.path.join(os.path.dirname(os.path.abspath(__name__)), 'logs/')
 
 os.makedirs(log_dir, exist_ok=True)
@@ -49,8 +47,8 @@ dictConfig({
             'interval': 1,
             'backupCount': 7,
             'encoding': 'utf-8',
-            'formatter': 'access',
-            'filters': ['access']
+            'formatter': 'access'
+            # 'filters': ['access']
         },
         'error': {
             'class': 'logging.handlers.TimedRotatingFileHandler',
@@ -63,11 +61,11 @@ dictConfig({
             'formatter': 'error'
         }
     },
-    'filters': {
-        'access': {
-            '()': LogFilter
-        }
-    },
+    # 'filters': {
+    #     'access': {
+    #         '()': LogFilter
+    #     }
+    # },
     'root': {
         'level': 'INFO',
         'handlers': ['access', 'error']
@@ -106,7 +104,6 @@ def http_post(url, resource, params, api_key, secret_key):
     conn = http.client.HTTPSConnection(url, timeout=10)
 
     temp_params = urllib.parse.urlencode(params) if params else ''
-    print(temp_params)
 
     conn.request("POST", resource, temp_params, headers)
     response = conn.getresponse()
@@ -164,8 +161,21 @@ class GateApi(object):
         return http_post(self.__url, url, params, self.__apiKey, self.__secretKey)
 
     # 获取下单状态
-    def get_order(self, params):
+    def get_order(self, order_number, currency_pair):
         url = "/api2/1/private/getOrder"
+        params = {'orderNumber': order_number, 'currencyPair': currency_pair}
+        return http_post(self.__url, url, params, self.__apiKey, self.__secretKey)
+
+    # 取消订单
+    def cancel_order(self, order_number, currency_pair):
+        url = "/api2/1/private/cancelOrder"
+        params = {'orderNumber': order_number, 'currencyPair': currency_pair}
+        return http_post(self.__url, url, params, self.__apiKey, self.__secretKey)
+
+    # 取消所有订单
+    def cancel_all_orders(self, trade_type, currency_pair):
+        url = "/api2/1/private/cancelAllOrders"
+        params = {'type': trade_type, 'currencyPair': currency_pair}
         return http_post(self.__url, url, params, self.__apiKey, self.__secretKey)
 
 
@@ -206,9 +216,61 @@ class Redis(object):
     def percent(self, value):
         self.conn.set('percent', value)
 
-    def flush_all_keys(self):
-        for key in self.conn.keys():
-            self.conn.delete(key)
+    @property
+    def order_buy(self):
+        return self.conn.get('order_buy')
+
+    @order_buy.setter
+    def order_buy(self, value):
+        self.conn.set('order_buy', value)
+
+    @property
+    def order_sell(self):
+        return self.conn.get('order_sell')
+
+    @order_sell.setter
+    def order_sell(self, value):
+        self.conn.set('order_sell', value)
+
+    @property
+    def direction(self):
+        return self.conn.get('direction')
+
+    @direction.setter
+    def direction(self, value):
+        self.conn.set('direction', value)
+
+    @property
+    def buytotal(self):
+        return self.conn.get('buytotal')
+
+    @buytotal.setter
+    def buytotal(self, value):
+        self.conn.set('buytotal', value)
+
+    @property
+    def buyfilledamount(self):
+        return self.conn.get('buyfilledamount')
+
+    @buyfilledamount.setter
+    def buyfilledamount(self, value):
+        self.conn.set('buyfilledamount', value)
+
+    @property
+    def selltotal(self):
+        return self.conn.get('selltotal')
+
+    @selltotal.setter
+    def selltotal(self, value):
+        self.conn.set('selltotal', value)
+
+    @property
+    def sellfilledamount(self):
+        return self.conn.get('sellfilledamount')
+
+    @sellfilledamount.setter
+    def sellfilledamount(self, value):
+        self.conn.set('sellfilledamount', value)
 
 
 def compute_order_info(init_price, number, amount, percent, buy=False):
