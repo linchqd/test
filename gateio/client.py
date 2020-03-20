@@ -4,19 +4,20 @@
 
 
 import logging
-from util import GateApi, Redis, compute_order_info
 import sys
 import time
 import json
-from pprint import pprint
+import os
+from logging.config import dictConfig
+from util import GateApi, Redis, compute_order_info
 
 # api info
-apiKey = 'E23B5533-1995-488B-B161-64899858EEE3'
+apiKey = 'E23B5533-1993-488B-B161-64899858EEE3'
 secretKey = 'df41f014eeabffde49d2d4b766b9263f42d59bcf0deb8a4fcdd5f8d849af837b'
 
 API_QUERY_URL = 'data.gateio.life'
 API_TRADE_URL = 'api.gateio.life'
-REDIS_HOST = '192.168.10.20'
+REDIS_HOST = '127.0.0.1'
 
 
 # init obj
@@ -29,6 +30,60 @@ AMOUNT = 100
 PERCENT = 0.05
 COINS = 'AE'
 CURRENCY_PAIR = 'ae_usdt'
+
+# logging setting
+# class LogFilter(logging.Filter):
+#     def filter(self, record):
+#         if record.levelno > 30:
+#             return False
+#         return True
+log_dir = os.path.join(os.path.dirname(os.path.abspath(__name__)), 'logs/')
+
+os.makedirs(log_dir, exist_ok=True)
+
+dictConfig({
+    'version': 1,
+    'formatters': {
+        'access': {
+            'format': '%(asctime)s %(levelname)s: %(message)s'
+        },
+        'error': {
+            'format': '%(asctime)s %(levelname)s: %(filename)s:%(module)s:%(funcName)s:%(lineno)d:%(message)s'
+        }
+    },
+    'handlers': {
+        'access': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'level': 'INFO',
+            'filename': '{}access.log'.format(log_dir),
+            'when': 'D',
+            'interval': 1,
+            'backupCount': 7,
+            'encoding': 'utf-8',
+            'formatter': 'access'
+            # 'filters': ['access']
+        },
+        'error': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'level': 'ERROR',
+            'filename': '{}error.log'.format(log_dir),
+            'when': 'D',
+            'interval': 1,
+            'backupCount': 7,
+            'encoding': 'utf-8',
+            'formatter': 'error'
+        }
+    },
+    # 'filters': {
+    #     'access': {
+    #         '()': LogFilter
+    #     }
+    # },
+    'root': {
+        'level': 'INFO',
+        'handlers': ['access', 'error']
+    }
+})
 
 
 def get_balances():
