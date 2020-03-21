@@ -61,6 +61,11 @@ dictConfig({
             'backupCount': 7,
             'encoding': 'utf-8',
             'formatter': 'error'
+        },
+        'debug': {
+            'class': 'logging.StreamHandler',
+            'level': 'DEBUG',
+            'formatter': 'access'
         }
     },
     # 'filters': {
@@ -70,7 +75,7 @@ dictConfig({
     # },
     'root': {
         'level': 'INFO',
-        'handlers': ['access', 'error']
+        'handlers': ['access', 'error', 'debug']
     }
 })
 
@@ -97,8 +102,8 @@ CURRENCY_PAIR = 'ae_usdt'
 def get_balances():
     res = json.loads(gate_trade.balances())
     if res['result'] == 'true':
-        usdt = res['available']['USDT']
-        coin = res['available'][COINS]
+        usdt = float(res['available']['USDT'])
+        coin = float(res['available'][COINS])
         return {'usdt': usdt, 'coin': coin}
 
 
@@ -154,6 +159,7 @@ while True:
             # 判断有没有买单成交
             if redis.order_buy:
                 order = json.loads(gate_trade.get_order(redis.order_buy, CURRENCY_PAIR))['order']
+                logging.info('买单信息: {}'.format(order))
                 if order['status'] == 'closed':
                     logging.info('买单{}成交'.format(order['orderNumber']))
                     if redis.direction == 'down':
@@ -167,18 +173,18 @@ while True:
                     else:
                         # 做多则计算下一个挂单信息
                         order_info = compute_order_info(
-                            redis.init_price, redis.number + 1, redis.amount, redis.percent, buy=True)
+                            redis.init_price, int(redis.number) + 1, redis.amount, redis.percent, buy=True)
                         # 下买单
                         if buy(order_info['buy_order_price'], order_info['buy_order_amount']):
-                            redis.number += 1
+                            redis.number = int(redis.number) + 1
                         redis.direction = 'up'
                         # 下卖单
                         total = redis.buytotal if redis.buytotal is not None else 0
                         if redis.buyfilledamount is None:
-                            redis.buytotal = total + order['initialAmount']
+                            redis.buytotal = float(total) + float(order['initialAmount'])
                             redis.buyfilledamount = 0
-                        elif redis.buyfilledamount > 0:
-                            redis.buytotal = total + (order['initialAmount'] - redis.buyfilledamount)
+                        elif float(redis.buyfilledamount) > 0:
+                            redis.buytotal = float(total) + (float(order['initialAmount']) - float(redis.buyfilledamount))
                             redis.buyfilledamount = 0
                         # 查询已有卖单
                         if redis.order_sell:
@@ -186,31 +192,32 @@ while True:
                             # 取消卖单
                             gate_trade.cancel_order(redis.order_sell, CURRENCY_PAIR)
                             logging.info('取消卖单{}成功'.format(redis.order_sell))
-                            if sell_order_tmp['filledAmount'] > 0:
-                                redis.buytotal = redis.buytotal - sell_order_tmp['filledAmount']
-                        sell(order_info['sell_order_price'], redis.buytotal * 0.998)
+                            if float(sell_order_tmp['filledAmount']) > 0:
+                                redis.buytotal = float(redis.buytotal) - float(sell_order_tmp['filledAmount'])
+                        sell(order_info['sell_order_price'], float(redis.buytotal) * 0.998)
 
-                elif order['filledAmount'] > 0 and (
-                        redis.buyfilledamount is None or order['filledAmount'] != redis.buyfilledamount):
+                elif float(order['filledAmount']) > 0 and (
+                        redis.buyfilledamount is None or float(order['filledAmount']) != float(redis.buyfilledamount)):
+                    logging.info('买单部分成交')
                     if redis.direction != 'down':
                         order_info = compute_order_info(
-                            redis.init_price, redis.number + 1, redis.amount, redis.percent, buy=True)
+                            redis.init_price, int(redis.number) + 1, redis.amount, redis.percent, buy=True)
                         if redis.direction is None:
                             redis.direction = 'up'
                             redis.buytotal = order['filledAmount']
                             redis.buyfilledamount = order['filledAmount']
-                            sell(order_info['sell_order_price'], redis.buytotal * 0.998)
+                            sell(order_info['sell_order_price'], float(redis.buytotal) * 0.998)
                         else:
-                            redis.buytotal += order['filledAmount'] - redis.buyfilledamount
+                            record = float(redis.buyfilledamount) if redis.buyfilledamount is not None else 0
+                            redis.buytotal = float(redis.buytotal) + (float(order['filledAmount']) - record)
                             redis.buyfilledamount = order['filledAmount']
                             if redis.order_sell:
-                                sell_order_tmp = json.loads(gate_trade.get_order(redis.order_sell, CURRENCY_PAIR))[
-                                    'order']
+                                sell_order_tmp = json.loads(gate_trade.get_order(redis.order_sell, CURRENCY_PAIR))['order']
                                 gate_trade.cancel_order(redis.order_sell, CURRENCY_PAIR)
                                 logging.info('取消卖单{}成功'.format(redis.order_sell))
-                                if sell_order_tmp['filledAmount'] > 0:
-                                    redis.buytotal = redis.buytotal - sell_order_tmp['filledAmount']
-                                sell(sell_order_tmp['initialRate'], redis.buytotal * 0.998)
+                                if float(sell_order_tmp['filledAmount']) > 0:
+                                    redis.buytotal = float(redis.buytotal) - float(sell_order_tmp['filledAmount'])
+                                sell(sell_order_tmp['initialRate'], float(redis.buytotal) * 0.998)
 
             # 判断有没有卖单成交
             if redis.order_sell:
@@ -228,18 +235,18 @@ while True:
                     else:
                         # 做空则计算下一个挂单信息
                         order_info = compute_order_info(
-                            redis.init_price, redis.number + 1, redis.amount, redis.percent)
+                            redis.init_price, int(redis.number) + 1, redis.amount, redis.percent)
                         # 下卖单
                         if sell(order_info['sell_order_price'], order_info['sell_order_amount']):
-                            redis.number += 1
+                            redis.number = int(redis.number) + 1
                         redis.direction = 'down'
                         # 下买单
-                        total = redis.selltotal if redis.selltotal is not None else 0
+                        total = float(redis.selltotal) if redis.selltotal is not None else 0
                         if redis.sellfilledamount is None:
-                            redis.selltotal = total + order['initialAmount']
+                            redis.selltotal = total + float(order['initialAmount'])
                             redis.sellfilledamount = 0
-                        elif redis.sellfilledamount > 0:
-                            redis.selltotal = total + (order['initialAmount'] - redis.sellfilledamount)
+                        elif float(redis.sellfilledamount) > 0:
+                            redis.selltotal = total + (float(order['initialAmount']) - float(redis.sellfilledamount))
                             redis.sellfilledamount = 0
                         # 查询已有买单
                         if redis.order_buy:
@@ -247,31 +254,32 @@ while True:
                             # 取消买单
                             gate_trade.cancel_order(redis.order_buy, CURRENCY_PAIR)
                             logging.info('取消买单{}成功'.format(redis.order_buy))
-                            if buy_order_tmp['filledAmount'] > 0:
-                                redis.selltotal = redis.selltotal - buy_order_tmp['filledAmount']
-                        buy(order_info['buy_order_price'], redis.selltotal * 1.002)
+                            if float(buy_order_tmp['filledAmount']) > 0:
+                                redis.selltotal = float(redis.selltotal) - float(buy_order_tmp['filledAmount'])
+                        buy(order_info['buy_order_price'], float(redis.selltotal) * 1.002)
 
-                elif order['filledAmount'] > 0 and (
-                        redis.sellfilledamount is None or order['filledAmount'] != redis.sellfilledamount):
+                elif float(order['filledAmount']) > 0 and (
+                        redis.sellfilledamount is None or float(order['filledAmount']) != float(redis.sellfilledamount)):
                     if redis.direction != 'up':
                         order_info = compute_order_info(
-                            redis.init_price, redis.number + 1, redis.amount, redis.percent)
+                            redis.init_price, int(redis.number) + 1, redis.amount, redis.percent)
                         if redis.direction is None:
                             redis.direction = 'down'
                             redis.selltotal = order['filledAmount']
                             redis.sellfilledamount = order['filledAmount']
-                            buy(order_info['buy_order_price'], redis.selltotal * 1.002)
+                            buy(order_info['buy_order_price'], float(redis.selltotal) * 1.002)
                         else:
-                            redis.selltotal += order['filledAmount'] - redis.sellfilledamount
+                            record = float(redis.sellfilledamount) if redis.sellfilledamount is not None else 0
+                            redis.selltotal = float(redis.selltotal) + float(order['filledAmount']) - record
                             redis.sellfilledamount = order['filledAmount']
                             if redis.order_buy:
                                 buy_order_tmp = json.loads(gate_trade.get_order(redis.order_buy, CURRENCY_PAIR))[
                                     'order']
                                 gate_trade.cancel_order(redis.order_buy, CURRENCY_PAIR)
                                 logging.info('取消买单{}成功'.format(redis.order_buy))
-                                if buy_order_tmp['filledAmount'] > 0:
-                                    redis.selltotal = redis.selltotal - buy_order_tmp['filledAmount']
-                                sell(buy_order_tmp['initialRate'], redis.selltotal * 1.002)
+                                if float(buy_order_tmp['filledAmount']) > 0:
+                                    redis.selltotal = float(redis.selltotal) - float(buy_order_tmp['filledAmount'])
+                                sell(buy_order_tmp['initialRate'], float(redis.selltotal) * 1.002)
     except Exception as e:
         logging.error('程序发生错误,错误原因: {}'.format(str(e.args)))
 

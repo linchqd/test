@@ -225,12 +225,12 @@ def compute_order_info(init_price, number, amount, percent, buy=False):
         buy_order_price = '%.4f' % (float(init_price) * (1 - (float(percent) * (int(number) + 1))))
         buy_order_amount = '%.2f' % (float(amount) * (2 ** int(number)))
         sell_order_price = '%.4f' % (float(init_price) * (1 - (int(number) - 1) * float(percent)))
-        sell_order_amount = '%.2f' % (float(buy_order_amount * 0.998))
+        sell_order_amount = '%.2f' % (float(buy_order_amount) * 0.998)
     else:
         sell_order_price = '%.4f' % (float(init_price) * (1 + (float(percent) * (int(number) + 1))))
         sell_order_amount = '%.2f' % (float(amount) * (2 ** int(number)))
         buy_order_price = '%.4f' % (float(init_price) * (1 + (int(number) - 1) * float(percent)))
-        buy_order_amount = '%.2f' % (sell_order_amount * 1.002)
+        buy_order_amount = '%.2f' % (float(sell_order_amount) * 1.002)
 
     return {
         'buy_order_price': buy_order_price,
