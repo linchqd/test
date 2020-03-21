@@ -17,19 +17,8 @@ secretKey = 'df41f014eeabffde49d2d4b766b9263f42d59bcf0deb8a4fcdd5f8d849af837b'
 
 API_QUERY_URL = 'data.gateio.life'
 API_TRADE_URL = 'api.gateio.life'
-REDIS_HOST = '127.0.0.1'
+REDIS_HOST = '192.168.10.20'
 
-
-# init obj
-gate_query = GateApi(API_QUERY_URL, apiKey, secretKey)
-gate_trade = GateApi(API_TRADE_URL, apiKey, secretKey)
-redis = Redis(host=REDIS_HOST)
-
-# set run var
-AMOUNT = 100
-PERCENT = 0.05
-COINS = 'AE'
-CURRENCY_PAIR = 'ae_usdt'
 
 # logging setting
 # class LogFilter(logging.Filter):
@@ -84,6 +73,25 @@ dictConfig({
         'handlers': ['access', 'error']
     }
 })
+
+# init obj
+gate_query = GateApi(API_QUERY_URL, apiKey, secretKey)
+gate_trade = GateApi(API_TRADE_URL, apiKey, secretKey)
+redis = Redis(host=REDIS_HOST)
+
+try:
+    if not redis.conn.ping():
+        logging.error('redis is not connected')
+        sys.exit(1)
+except Exception as e:
+    logging.error('redis is not connected, {}'.format(e))
+    sys.exit(1)
+
+# set run var
+AMOUNT = 100
+PERCENT = 0.05
+COINS = 'AE'
+CURRENCY_PAIR = 'ae_usdt'
 
 
 def get_balances():
