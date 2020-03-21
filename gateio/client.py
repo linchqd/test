@@ -12,7 +12,7 @@ from logging.config import dictConfig
 from util import GateApi, Redis, compute_order_info
 
 # api info
-apiKey = 'E23B5533-1993-488B-B161-64899858EEE3'
+apiKey = 'E23B5533-1995-488B-B161-64899858EEE3'
 secretKey = 'df41f014eeabffde49d2d4b766b9263f42d59bcf0deb8a4fcdd5f8d849af837b'
 
 API_QUERY_URL = 'data.gateio.life'
@@ -89,7 +89,7 @@ except Exception as e:
 
 # set run var
 AMOUNT = 100
-PERCENT = 0.05
+PERCENT = 0.02
 COINS = 'AE'
 CURRENCY_PAIR = 'ae_usdt'
 
@@ -274,5 +274,7 @@ while True:
                                 sell(buy_order_tmp['initialRate'], redis.selltotal * 1.002)
     except Exception as e:
         logging.error('程序发生错误,错误原因: {}'.format(str(e.args)))
+
+    logging.info('当前买单: {}, 当前卖单: {}'.format(redis.order_buy, redis.order_sell))
 
     time.sleep(1)
