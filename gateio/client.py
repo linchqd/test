@@ -181,13 +181,15 @@ while True:
                             redis.number = int(redis.number) + 1
                         redis.direction = 'up'
                         # 下卖单
+                        logging.info('当前redis中buytotal: {}, buyfilledamount: {}'.format(redis.buytotal, redis.buyfilledamount))
                         total = redis.buytotal if redis.buytotal is not None else 0
-                        if redis.buyfilledamount is None:
-                            redis.buytotal = float(total) + float(order['initialAmount'])
-                            redis.buyfilledamount = 0
-                        elif float(redis.buyfilledamount) > 0:
+                        if redis.buyfilledamount is not None and float(redis.buyfilledamount) > 0:
                             redis.buytotal = float(total) + (float(order['initialAmount']) - float(redis.buyfilledamount))
                             redis.buyfilledamount = 0
+                        else:
+                            redis.buytotal = float(total) + float(order['initialAmount'])
+                            redis.buyfilledamount = 0
+
                         # 查询已有卖单
                         if redis.order_sell:
                             sell_order_tmp = json.loads(gate_trade.get_order(redis.order_sell, CURRENCY_PAIR))['order']
@@ -201,6 +203,7 @@ while True:
                 elif float(order['filledAmount']) > 0 and (
                         redis.buyfilledamount is None or float(order['filledAmount']) != float(redis.buyfilledamount)):
                     logging.info('买单部分成交')
+                    logging.info('当前redis中buytotal: {}, buyfilledamount: {}'.format(redis.buytotal, redis.buyfilledamount))
                     if redis.direction != 'down':
                         order_info = compute_order_info(
                             redis.init_price, int(redis.number) + 1, redis.amount, redis.percent, buy=True)
@@ -211,7 +214,8 @@ while True:
                             sell(order_info['sell_order_price'], float(redis.buytotal) * 0.998)
                         else:
                             record = float(redis.buyfilledamount) if redis.buyfilledamount is not None else 0
-                            redis.buytotal = float(redis.buytotal) + (float(order['filledAmount']) - record)
+                            total = redis.buytotal if redis.buytotal is not None else 0
+                            redis.buytotal = float(total) + (float(order['filledAmount']) - record)
                             redis.buyfilledamount = order['filledAmount']
                             if redis.order_sell:
                                 sell_order_tmp = json.loads(gate_trade.get_order(redis.order_sell, CURRENCY_PAIR))['order']
@@ -243,13 +247,16 @@ while True:
                             redis.number = int(redis.number) + 1
                         redis.direction = 'down'
                         # 下买单
+                        logging.info(
+                            '当前redis中buytotal: {}, buyfilledamount: {}'.format(redis.buytotal, redis.buyfilledamount))
                         total = float(redis.selltotal) if redis.selltotal is not None else 0
-                        if redis.sellfilledamount is None:
-                            redis.selltotal = total + float(order['initialAmount'])
-                            redis.sellfilledamount = 0
-                        elif float(redis.sellfilledamount) > 0:
+                        if redis.sellfilledamount is not None and float(redis.sellfilledamount) > 0:
                             redis.selltotal = total + (float(order['initialAmount']) - float(redis.sellfilledamount))
                             redis.sellfilledamount = 0
+                        else:
+                            redis.selltotal = total + float(order['initialAmount'])
+                            redis.sellfilledamount = 0
+
                         # 查询已有买单
                         if redis.order_buy:
                             buy_order_tmp = json.loads(gate_trade.get_order(redis.order_buy, CURRENCY_PAIR))['order']
@@ -262,6 +269,9 @@ while True:
 
                 elif float(order['filledAmount']) > 0 and (
                         redis.sellfilledamount is None or float(order['filledAmount']) != float(redis.sellfilledamount)):
+                    logging.info('卖单部分成交')
+                    logging.info(
+                        '当前redis中buytotal: {}, buyfilledamount: {}'.format(redis.buytotal, redis.buyfilledamount))
                     if redis.direction != 'up':
                         order_info = compute_order_info(
                             redis.init_price, int(redis.number) + 1, redis.amount, redis.percent)
@@ -272,7 +282,8 @@ while True:
                             buy(order_info['buy_order_price'], float(redis.selltotal) * 1.002)
                         else:
                             record = float(redis.sellfilledamount) if redis.sellfilledamount is not None else 0
-                            redis.selltotal = float(redis.selltotal) + float(order['filledAmount']) - record
+                            total = float(redis.selltotal) if redis.selltotal is not None else 0
+                            redis.selltotal = total + float(order['filledAmount']) - record
                             redis.sellfilledamount = order['filledAmount']
                             if redis.order_buy:
                                 buy_order_tmp = json.loads(gate_trade.get_order(redis.order_buy, CURRENCY_PAIR))[
@@ -287,4 +298,4 @@ while True:
 
     logging.info('当前买单: {}, 当前卖单: {}'.format(redis.order_buy, redis.order_sell))
 
-    time.sleep(1)
+    time.sleep(2)
