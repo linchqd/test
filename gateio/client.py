@@ -26,7 +26,9 @@ REDIS_HOST = '192.168.10.20'
 #         if record.levelno > 30:
 #             return False
 #         return True
-log_dir = os.path.join(os.path.dirname(os.path.abspath(__name__)), 'logs/')
+# log_dir = os.path.join(os.path.dirname(os.path.abspath(__name__)), 'logs/')
+
+log_dir = '/tmp/logs/'
 
 os.makedirs(log_dir, exist_ok=True)
 
@@ -75,7 +77,7 @@ dictConfig({
     # },
     'root': {
         'level': 'INFO',
-        'handlers': ['access', 'error', 'debug']
+        'handlers': ['error', 'debug']
     }
 })
 
@@ -94,7 +96,7 @@ except Exception as e:
 
 # set run var
 AMOUNT = 100
-PERCENT = 0.02
+PERCENT = 0.01
 COINS = 'AE'
 CURRENCY_PAIR = 'ae_usdt'
 

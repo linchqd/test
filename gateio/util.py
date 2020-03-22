@@ -216,6 +216,11 @@ class Redis(object):
 
 
 def compute_order_info(init_price, number, amount, percent, buy=False):
+    if 4 <= int(number) <= 5:
+        percent = 0.03
+    elif int(number) >= 6:
+        percent = 0.05
+
     if int(number) == 0:
         buy_order_price = '%.4f' % (float(init_price) * (1 - float(percent)))
         buy_order_amount = '%.2f' % (float(amount) * (2 ** int(number)))
