@@ -17,7 +17,7 @@ secretKey = 'df41f014eeabffde49d2d4b766b9263f42d59bcf0deb8a4fcdd5f8d849af837b'
 
 API_QUERY_URL = 'data.gateio.life'
 API_TRADE_URL = 'api.gateio.life'
-REDIS_HOST = '192.168.10.20'
+REDIS_HOST = '127.0.0.1'
 
 
 # logging setting
@@ -77,7 +77,7 @@ dictConfig({
     # },
     'root': {
         'level': 'INFO',
-        'handlers': ['error', 'debug']
+        'handlers': ['error', 'access']
     }
 })
 

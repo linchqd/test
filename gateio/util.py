@@ -216,27 +216,68 @@ class Redis(object):
 
 
 def compute_order_info(init_price, number, amount, percent, buy=False):
-    if 4 <= int(number) <= 5:
-        percent = 0.03
-    elif int(number) >= 6:
-        percent = 0.05
+    init_price = float(init_price)
+    number = int(number)
+    amount = float(amount)
+    percent = float(percent)
 
     if int(number) == 0:
-        buy_order_price = '%.4f' % (float(init_price) * (1 - float(percent)))
-        buy_order_amount = '%.2f' % (float(amount) * (2 ** int(number)))
-        sell_order_price = '%.4f' % (float(init_price) * (1 + float(percent)))
-        sell_order_amount = '%.2f' % (float(amount) * (2 ** int(number)))
+        buy_order_price = '%.4f' % (init_price * (1 - percent))
+        buy_order_amount = '%.2f' % (amount * (2 ** number))
+        sell_order_price = '%.4f' % (init_price * (1 + percent))
+        sell_order_amount = '%.2f' % (amount * (2 ** number))
     elif buy:
-        buy_order_price = '%.4f' % (float(init_price) * (1 - (float(percent) * (int(number) + 1))))
-        buy_order_amount = '%.2f' % (float(amount) * (2 ** int(number)))
-        sell_order_price = '%.4f' % (float(init_price) * (1 - (int(number) - 1) * float(percent)))
-        sell_order_amount = '%.2f' % (float(buy_order_amount) * 0.998)
-    else:
-        sell_order_price = '%.4f' % (float(init_price) * (1 + (float(percent) * (int(number) + 1))))
-        sell_order_amount = '%.2f' % (float(amount) * (2 ** int(number)))
-        buy_order_price = '%.4f' % (float(init_price) * (1 + (int(number) - 1) * float(percent)))
-        buy_order_amount = '%.2f' % (float(sell_order_amount) * 1.002)
+        if number < 4:
+            buy_order_price = '%.4f' % (init_price * (1 - (percent * (number + 1))))
+            sell_order_price = '%.4f' % (init_price * (1 - (number - 1) * percent))
+        else:
+            if 4 <= number < 6:
+                buy_order_price = '%.4f' % (init_price * (1 - (0.04 + 0.03 * (number - 4 + 1))))
+            else:
+                buy_order_price = '%.4f' % (init_price * (1 - (0.1 + 0.05 * (number - 6 + 1))))
+            tmp = compute_order_info(init_price, number - 2, amount, percent)
+            sell_order_price = '%.4f' % (tmp['buy_order_price'])
 
+        buy_order_amount = '%.2f' % (amount * (2 ** number))
+        sell_order_amount = '%.2f' % (buy_order_amount * 0.998)
+        '''
+            1%    0     1%
+            2%    1     0%
+            3%    2     1%
+            4%    3     2% 
+            7%    4     3%
+            10%   5     4% 
+            15%   6     7%
+            20%   7     10%
+            25%   8     15%
+            30%   9     20%
+        '''
+    else:
+        if number < 4:
+            sell_order_price = '%.4f' % (init_price * (1 + (percent * (number + 1))))
+            buy_order_price = '%.4f' % (init_price * (1 + (number - 1) * percent))
+        else:
+            if 4 <= number < 6:
+                sell_order_price = '%.4f' % (init_price * (1 + (0.04 + 0.03 * (number - 4 + 1))))
+            else:
+                sell_order_price = '%.4f' % (init_price * (1 + (0.1 + 0.05 * (number - 6 + 1))))
+            tmp = compute_order_info(init_price, number - 2, amount, percent)
+            buy_order_price = '%.4f' % (tmp['sell_order_price'])
+
+        sell_order_amount = '%.2f' % (amount * (2 ** number))
+        buy_order_amount = '%.2f' % (sell_order_amount * 1.002)
+        '''
+            1%    0     1%
+            0%    1     2%
+            1%    2     3%
+            2%    3     4% 
+            3%    4     7%
+            4%    5     10% 
+            7%    6     15%
+            10%   7     20%
+            15%   8     25%
+            20%   9     30%
+        '''
     return {
         'buy_order_price': buy_order_price,
         'buy_order_amount': buy_order_amount,
