@@ -235,7 +235,7 @@ def compute_order_info(init_price, number, amount, percent, buy=False):
                 buy_order_price = '%.4f' % (init_price * (1 - (0.04 + 0.03 * (number - 4 + 1))))
             else:
                 buy_order_price = '%.4f' % (init_price * (1 - (0.1 + 0.05 * (number - 6 + 1))))
-            tmp = compute_order_info(init_price, number - 2, amount, percent)
+            tmp = compute_order_info(init_price, number - 2, amount, percent, buy=True)
             sell_order_price = '%.4f' % (tmp['buy_order_price'])
 
         buy_order_amount = '%.2f' % (amount * (2 ** number))
