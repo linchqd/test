@@ -228,6 +228,7 @@ while True:
             # 判断有没有卖单成交
             if redis.order_sell:
                 order = json.loads(gate_trade.get_order(redis.order_sell, CURRENCY_PAIR))['order']
+                logging.info('卖单信息: {}'.format(order))
                 if order['status'] == 'closed':
                     logging.info('卖单{}成交'.format(order['orderNumber']))
                     if redis.direction == 'up':
