@@ -293,7 +293,7 @@ while True:
                                 logging.info('取消买单{}成功'.format(redis.order_buy))
                                 if float(buy_order_tmp['filledAmount']) > 0:
                                     redis.selltotal = float(redis.selltotal) - float(buy_order_tmp['filledAmount'])
-                                sell(buy_order_tmp['initialRate'], float(redis.selltotal) * 1.002)
+                                buy(buy_order_tmp['initialRate'], float(redis.selltotal) * 1.002)
     except Exception as e:
         logging.error('程序发生错误,错误原因: {}'.format(str(e.args)))
 
